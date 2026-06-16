@@ -2,7 +2,8 @@
 
 Applies to NanoRadar **MR72, MR76, MR82** (and the SR/UCM object-output series). Derived from the Continental **ARS408** protocol: the radar outputs two parallel lists — *Objects* (tracked targets) and *Clusters* (raw reflections).
 
-Cross-verified from three independent open-source implementations:
+Cross-verified from several independent implementations, including **NanoRadar's own PX4 driver**:
+- [NanoRadar official PX4 driver](https://github.com/OuYangLei92/PX4-Autopilot/tree/NanoradarCAN-v1.15.4/src/drivers/distance_sensor/nanoradar_can) (PX4 PR #25006) — same `0x60B` math: `x = (((data[2]&0x07)<<8)|data[3])*0.2-204.6`, `y = ((data[1]<<5)|(data[2]>>3))*0.2-500.0`
 - [`olezhkameleshko-ux/mr72-radar-library`](https://github.com/olezhkameleshko-ux/mr72-radar-library) (C++, firmware V4.0.0)
 - ArduPilot [`AP_Proximity_MR72_CAN`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Proximity/AP_Proximity_MR72_CAN.cpp)
 - [`harrylal/radar_mr76`](https://github.com/harrylal/radar_mr76) (ROS)

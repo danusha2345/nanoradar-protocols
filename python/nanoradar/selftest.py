@@ -54,19 +54,22 @@ def test_config_roundtrip() -> None:
 
 
 def test_altimeter_can_short() -> None:
-    data = bytes([0x01, 0x00, 0x07, 0xD0, 0x00, 0x00, 0x00, 138])
+    # 20.0 m ; data[7] = sum(data[0..6]) & 0xFF = 0xD8 (valid checksum)
+    data = bytes([0x01, 0x00, 0x07, 0xD0, 0x00, 0x00, 0x00, 0xD8])
     t = alt.decode_target_can(data)
     assert t.id == 1
     assert _close(t.distance_m, 20.0)
-    assert t.snr == 10
+    assert t.checksum_valid is True
 
 
 def test_altimeter_can_long() -> None:
     # 3000 m needs the 20-bit field: raw = 300000 = 0x493E0 -> nibble 4, 0x93, 0xE0
-    data = bytes([0x42, 0x00, 0x93, 0xE0, 0x00, 0x00, 0x00, 128])
+    # checksum = (0x42 + 0x93 + 0xE0) & 0xFF = 0xB5
+    data = bytes([0x42, 0x00, 0x93, 0xE0, 0x00, 0x00, 0x00, 0xB5])
     t = alt.decode_target_can(data)
     assert t.id == 2
     assert _close(t.distance_m, 3000.0)
+    assert t.checksum_valid is True
 
 
 def test_altimeter_serial_nra24_manual() -> None:

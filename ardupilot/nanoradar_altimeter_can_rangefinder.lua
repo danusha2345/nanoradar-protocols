@@ -27,8 +27,9 @@
   Put this file in  APM/scripts/  on the SD card and reboot.
   Confirm "NanoRadar altimeter Lua driver started" appears in the messages.
 
-  Caveats: the 20-bit decode is reverse-engineered and not yet hardware-verified
-  for UAM285; test on the bench before flight. b5/b6 (roll/speed) are ignored.
+  The 20-bit decode + data[7] checksum match NanoRadar's own PX4 driver
+  (OuYangLei92/PX4-Autopilot, PR #25006), so the math is vendor-confirmed.
+  Still bench-test your wiring/IDs before flight. b5/b6 (roll/speed) are ignored.
 --]]
 
 ---@diagnostic disable: undefined-global
@@ -40,6 +41,8 @@ local CAN_BUFFER_LEN  = 8       -- received-frame buffer depth
 local DEBUG           = false   -- true to print each decoded reading
 local DIST_MIN_M      = 0.10    -- ignore readings below this (m)
 local DIST_MAX_M      = 5400.0  -- ignore readings above this (m)
+local REQUIRE_CHECKSUM = false  -- true: only accept checksum-valid (20-bit) frames;
+                                -- false: also accept old no-checksum (16-bit) firmware
 
 -- ---- constants ----
 local RFND_LUA_TYPE   = 36      -- RNGFNDx_TYPE for Lua scripting backend
@@ -72,13 +75,29 @@ local function is_target_frame(id)
   return (id & 0x0F) == MSG_TARGET_LOW and id >= 0x70C and id <= 0x77C
 end
 
--- 20-bit distance decode -> metres
+-- checksum = low byte of sum(data[0..6]); the long-range firmware puts it in data[7]
+local function frame_checksum(frame)
+  local s = 0
+  for i = 0, 6 do
+    s = s + frame:data(i)
+  end
+  return s & 0xFF
+end
+
+-- Decode distance (metres). The official NanoRadar driver auto-detects two
+-- firmware variants by the data[7] checksum:
+--   * checksum valid -> 20-bit decode (high nibble of data[0] = bits 16..19)
+--   * otherwise      -> 16-bit decode (data[2..3] only), <=655 m models
+-- Returns nil if the checksum is required but fails.
 local function decode_distance_m(frame)
-  local b0 = frame:data(0)
-  local b2 = frame:data(2)
-  local b3 = frame:data(3)
-  local raw = (((b0 >> 4) & 0x0F) << 16) | (b2 << 8) | b3
-  return raw * 0.01
+  local b0, b2, b3 = frame:data(0), frame:data(2), frame:data(3)
+  if frame_checksum(frame) == frame:data(7) then
+    local raw = (((b0 >> 4) & 0x0F) << 16) | (b2 << 8) | b3   -- 20-bit
+    return raw * 0.01
+  elseif not REQUIRE_CHECKSUM then
+    return ((b2 << 8) | b3) * 0.01                            -- 16-bit fallback
+  end
+  return nil
 end
 
 local function update()
@@ -94,7 +113,7 @@ local function update()
   while frame do
     if is_target_frame(frame:id()) then
       local dist_m = decode_distance_m(frame)
-      if dist_m >= DIST_MIN_M and dist_m <= DIST_MAX_M then
+      if dist_m and dist_m >= DIST_MIN_M and dist_m <= DIST_MAX_M then
         if DEBUG then
           gcs:send_text(SEVERITY_INFO, string.format("NanoRadar alt: %.2f m", dist_m))
         end

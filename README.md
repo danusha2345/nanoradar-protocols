@@ -58,11 +58,11 @@ rcs      = data[7] * 0.5 - 64.0                                # dBsm
 ### Altimeter (NRA24 / UAM231 / UAM285) — CAN
 ```
 0x60A  Radar status / heartbeat
-0x70C  Target Info:
-       short-range (≤655 m):  distance = (data[2]*256 + data[3]) * 0.01   # m
-       long-range  (≥3000 m): distance = (((data[0]>>4)&0x0F)<<16 | data[2]<<8 | data[3]) * 0.01  # 20-bit, up to ~10485 m
-       id  = data[0] & 0x0F
-       snr = data[7]-128 (NRA24 CAN driver)  /  payload[1]*0.5 (vendor tool, UAM path)
+0x70C  Target Info — two firmware variants (auto-detect via checksum in data[7]):
+       A. no-checksum / 16-bit:  distance = (data[2]*256 + data[3]) * 0.01            # max 655 m
+       B. checksum / 20-bit:     distance = (((data[0]&0xF0)<<12) | data[2]<<8 | data[3]) * 0.01  # up to ~10485 m
+                                 checksum = data[7] == (sum(data[0..6]) & 0xFF)
+       id = data[0] & 0x0F
 ```
 
 ### Altimeter — UART/serial (native 14-byte frame)
@@ -87,10 +87,10 @@ The altimeters can switch to an **Aerotenna/Ainstein US-D1 compatible** serial s
 | Item | Confidence |
 |---|---|
 | Object CAN map (MR72/MR76/MR82) | ✅ cross-verified from 3 open-source drivers |
-| Altimeter CAN/serial framing (`0x60A`/`0x70C`) | ✅ from ArduPilot driver + NanoRadar manual |
-| Altimeter 20-bit long-range distance | ⚠️ reverse-engineered from vendor tool, **not hardware-verified** |
+| Altimeter CAN/serial framing (`0x60A`/`0x70C`) | ✅ from ArduPilot + the official NanoRadar PX4 driver + manual |
+| Altimeter 20-bit long-range distance + checksum | ✅ **confirmed by NanoRadar's own PX4 driver** (PR #25006) |
 | MR82-specific fields | ⚠️ assumed same as MR72 family (datasheet confirms protocol family) |
-| UAM285-specific scaling | ⚠️ inferred from UAM231 parser; needs the official UAM285 protocol manual |
+| UAM285-specific scaling | ✅ same family as UAM231/UAM221, confirmed in the PX4 driver |
 
 PRs/issues with hardware captures, corrections, or official protocol docs are very welcome. If a finding here helps you, see the Boosty button above ☕.
 

@@ -33,15 +33,23 @@ USD1_HDR_V0 = 0x48
 class AltimeterTarget:
     id: int
     distance_m: float
-    rcs: float | None = None     # dBsm (serial frame); None on CAN
-    snr: int | None = None       # CAN frame: data[7] - 128
+    rcs: float | None = None         # dBsm (native serial frame); None on CAN
     roll_count: int | None = None
-    raw_distance: int = 0        # raw 20-bit count (x0.01 m)
+    checksum_valid: bool | None = None  # CAN/serial: data[7] vs sum(data[0..6])&0xFF
+    raw_distance: int = 0            # raw 20-bit count (x0.01 m)
 
 
 def _decode_distance20(b0: int, b2: int, b3: int) -> int:
-    """20-bit raw distance: high nibble of the id byte + the two range bytes."""
+    """20-bit raw distance: high nibble of the id byte + the two range bytes.
+
+    Equivalent to the official driver's ``((b0 & 0xF0) << 12) | (b2 << 8) | b3``.
+    """
     return (((b0 >> 4) & 0x0F) << 16) | (b2 << 8) | b3
+
+
+def _checksum(data: bytes) -> int:
+    """Low byte of the sum of the first 7 bytes (data[0..6])."""
+    return sum(data[0:7]) & 0xFF
 
 
 # --- native CAN -------------------------------------------------------------
@@ -57,11 +65,17 @@ def is_target_id(can_id: int) -> bool:
 
 
 def decode_target_can(data: bytes) -> AltimeterTarget:
+    """Decode a 0x70C CAN target frame (8 bytes).
+
+    ``data[7]`` is a checksum in the long-range firmware. If it validates, the
+    20-bit decode is authoritative; otherwise the radar uses the no-checksum
+    16-bit variant (high nibble of ``data[0]`` is 0 anyway, so the result matches).
+    """
     raw = _decode_distance20(data[0], data[2], data[3])
     return AltimeterTarget(
         id=data[0] & 0x0F,
         distance_m=raw * 0.01,
-        snr=data[7] - 128,
+        checksum_valid=(_checksum(data) == data[7]),
         raw_distance=raw,
     )
 

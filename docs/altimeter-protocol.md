@@ -6,20 +6,22 @@ Applies to NanoRadar radar **altimeters**: NRA12, NRA15, **NRA24**, NRA24Pro, UA
 
 | Model | Band | Max range | Distance field |
 |---|---|---|---|
-| NRA15 | 24 GHz | short | 16-bit |
+| NRA15 | 24 GHz | 100 m | 16-bit |
 | NRA24 | 24 GHz (K-band) | 50 m / 200 m | 16-bit (`data[2..3]`) |
 | NRA24Pro | 24 GHz | ~300–500 m | 16-bit (≤655 m fits) |
-| UAM231 | 24 GHz | **1000 m** | **20-bit** (needs high nibble) |
+| UAM221 | 24 GHz | 200 m | 16-bit |
+| UAM231 | 24 GHz | **800–1000 m** | **20-bit** (needs high nibble) |
 | UAM285 | mmWave | **3000 m** (max ~5400) | **20-bit** |
 
 The 16-bit `(data[2]*256+data[3])*0.01` decode saturates at **655.35 m**. So NRA24/NRA24Pro fit in 16 bits, but **UAM231 (1000 m) and UAM285 (3000 m) require the 20-bit form below**. UAM231's 1000 m range is independent corroboration of the 20-bit field recovered from the vendor tool.
 
 Sources:
-- ArduPilot [`AP_RangeFinder_NRA24_CAN`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_RangeFinder/AP_RangeFinder_NRA24_CAN.cpp) (CAN decode)
+- **NanoRadar's own official PX4 driver** — [`OuYangLei92/PX4-Autopilot` @ `NanoradarCAN-v1.15.4`](https://github.com/OuYangLei92/PX4-Autopilot/tree/NanoradarCAN-v1.15.4/src/drivers/distance_sensor/nanoradar_can) (submitted as [PX4 PR #25006](https://github.com/PX4/PX4-Autopilot/pull/25006)). Supports NRA24 (200 m), NRA15 (100 m), UAM221 (200 m), UAM231 (800 m), MR72 (80 m).
+- ArduPilot [`AP_RangeFinder_NRA24_CAN`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_RangeFinder/AP_RangeFinder_NRA24_CAN.cpp)
 - NanoRadar NRA24 user manual ("with check sum") — serial frame + checksum
-- Decompilation of NanoRadar's own configurator **NSM Tools v2.0.7** (supports NRA24/NRA15/UAM231) — the long-range distance field
+- Decompilation of NanoRadar's configurator **NSM Tools v2.0.7**
 
-> ⚠️ The 20-bit long-range distance decode below is reverse-engineered from the vendor tool and is **not yet hardware-verified**. The short-range form is confirmed by the ArduPilot driver and the NRA24 manual.
+> ✅ **The 20-bit long-range decode is CONFIRMED by NanoRadar's own PX4 driver source** (not just the decompiled tool). The vendor code computes `dist = (((data[0] & 0xF0) << 12) | (data[2] << 8) | data[3]) / 100`, which is identical to `(((data[0]>>4)&0x0F)<<16 | data[2]<<8 | data[3]) * 0.01`.
 
 ## CAN
 
@@ -32,18 +34,22 @@ Radar-id addressing is the same `id + sensorID*0x10` scheme; ArduPilot extracts 
 
 ### `0x70C` Target Info decode
 
-Short-range altimeters (NRA24 50 m / 200 m — value never exceeds 655 m):
+There are **two firmware variants** of this frame; the official NanoRadar PX4 driver auto-detects which by checking whether `data[7]` is a valid checksum:
+
+**A. No-checksum / 16-bit** (older / short-range, `data[7]` is not a checksum):
 ```
-distance = (data[2]*256 + data[3]) * 0.01            # m
-snr      = data[7] - 128                              # ArduPilot NRA24 CAN driver
+distance = (data[2]*256 + data[3]) * 0.01            # m, max 655.35 m
 ```
 
-Long-range altimeters (**UAM231 ≥1000 m, UAM285 ≥3000 m**) — the upper distance bits are stored in the **high nibble of the target-id byte**:
+**B. Checksum / 20-bit** (long-range: UAM231 ≥1000 m, UAM285 ≥3000 m) — the upper distance bits live in the **high nibble of byte 0**, and `data[7]` is a checksum:
 ```
 id       = data[0] & 0x0F
-distance = ( ((data[0]>>4) & 0x0F) << 16 | data[2]<<8 | data[3] ) * 0.01   # 20-bit → up to ~10485 m
+distance = ( ((data[0] & 0xF0) << 12) | data[2]<<8 | data[3] ) * 0.01     # 20-bit → up to ~10485 m
+checksum = data[7] == (sum(data[0..6]) & 0xFF)                            # must validate
 ```
-In the vendor tool's UAM parser, SNR is taken from `data[1] * 0.5` rather than `data[7]-128`, i.e. the long-range frame layout differs from NRA24 by more than just the high nibble. Treat the exact SNR/extra-field placement as unconfirmed until checked against the official UAM285 protocol manual or a capture.
+`(data[0] & 0xF0) << 12` is exactly `((data[0]>>4)&0x0F) << 16`. The 20-bit form is a superset of the 16-bit form (high nibble 0 ⇒ identical), so a robust decoder validates the checksum: if it passes, use the 20-bit decode; otherwise fall back to 16-bit.
+
+> Note: ArduPilot's `AP_RangeFinder_NRA24_CAN` reads `data[7]-128` as an SNR and ignores the high nibble — it works only for variant A (≤655 m). For the long-range models use the checksum/20-bit decode (PX4 driver, or the Lua driver / Python parser in this repo).
 
 ## UART / serial
 

@@ -53,6 +53,12 @@ A **no-recompile** option for the full range is a Lua scripting driver (reads th
 frames, does the 20-bit decode, feeds a scripting rangefinder backend `RNGFNDx_TYPE=36`).
 A ready-to-use one is in [`../ardupilot/nanoradar_altimeter_can_rangefinder.lua`](../ardupilot/nanoradar_altimeter_can_rangefinder.lua).
 
-## PX4
+## PX4 — the official NanoRadar driver
 
-PX4 has a `nanoradar_can` driver under `src/drivers/distance_sensor/` (UAVCAN-based), discussed on the [PX4 forum](https://discuss.px4.io/t/px4-support-millimeter-wave-radar-as-rangfinder-and-obstacle-distance-sensor/46876). Configure via the standard `EKF2_RNG_*` rangefinder parameters once the driver is built in.
+NanoRadar contributed a `nanoradar_can` driver (under `src/drivers/distance_sensor/nanoradar_can`) — fork [`OuYangLei92/PX4-Autopilot @ NanoradarCAN-v1.15.4`](https://github.com/OuYangLei92/PX4-Autopilot/tree/NanoradarCAN-v1.15.4/src/drivers/distance_sensor/nanoradar_can), submitted as [PX4 PR #25006](https://github.com/PX4/PX4-Autopilot/pull/25006). It supports **NRA24 (200 m), NRA15 (100 m), UAM221 (200 m), UAM231 (800 m), MR72 (80 m)**, publishes `distance_sensor` (rangefinder) and `obstacle_distance` (avoidance), and selects the CAN port with `SENS_NR_CAN` (0/1/2).
+
+This driver is the **authoritative reference** for the decode in this repo: it confirms the object `0x60B` math, the altimeter `0x70C` 20-bit/checksum decode, and the `radar_id = (msg_id>>4)&0x0F` addressing. It auto-detects the no-checksum (16-bit) vs checksum (20-bit) firmware by validating `data[7]`. It's a non-DroneCAN ("RadarCAN") driver, so it must be built into firmware (`SENS_NR_CAN`).
+
+## Native DroneCAN firmware (true plug-and-play)
+
+Per the ArduPilot/PX4 forums, **NanoRadar can supply firmware that makes the radar a native DroneCAN device** (e.g. an NRA24 with DroneCAN support). In that mode the radar emits the standard DroneCAN range-sensor message and is picked up by ArduPilot/PX4's existing DroneCAN stack — **no RadarCAN, no Lua, no custom build**. Ask NanoRadar (`sales@nanoradar.cn`) for the DroneCAN firmware variant. This is the cleanest integration if available for your model.

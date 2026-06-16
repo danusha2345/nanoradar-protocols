@@ -8,6 +8,9 @@ Everything here was reconstructed from public, freely available material. No ven
 - [harrylal/radar_mr76](https://github.com/harrylal/radar_mr76) — ROS package for MR76 (CAN).
 - [Ashraff93/NanoRadar_MR72](https://github.com/Ashraff93/NanoRadar_MR72), [Ashraff93/NanoRadar_NRA15](https://github.com/Ashraff93/NanoRadar_NRA15)
 
+## Official NanoRadar driver (authoritative — both families)
+- [`OuYangLei92/PX4-Autopilot @ NanoradarCAN-v1.15.4`](https://github.com/OuYangLei92/PX4-Autopilot/tree/NanoradarCAN-v1.15.4/src/drivers/distance_sensor/nanoradar_can) → [PX4 PR #25006](https://github.com/PX4/PX4-Autopilot/pull/25006). NanoRadar's own `nanoradar_can` driver. Confirms the `0x60B` object decode, the `0x70C` 20-bit/checksum altimeter decode, and the `radar_id=(msg_id>>4)&0xF` addressing. Models: NRA24/NRA15/UAM221/UAM231/MR72.
+
 ## Open-source drivers (altimeter / family B)
 - [ArduPilot `AP_RangeFinder_NRA24_CAN`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_RangeFinder/AP_RangeFinder_NRA24_CAN.cpp) — `0x70C` target / `0x60A` heartbeat, 16-bit distance.
 - [ArduPilot PR #30973](https://github.com/ArduPilot/ardupilot/pull/30973) — NRA24 serial driver (documents the 14-byte serial frame).

@@ -59,6 +59,6 @@ candump -L can0 | python3 examples/decode_candump.py --family auto
 ```
 
 ## Caveats
-- The altimeter `distance` uses the 20-bit form (high nibble of `data[0]` → bits 16-19); for ≤655 m sensors that nibble is 0 so it matches the 16-bit decode. This is reverse-engineered from the vendor tool and **not yet hardware-verified** for UAM285.
+- The altimeter `distance` uses the 20-bit form (high nibble of `data[0]` → bits 16-19); for ≤655 m sensors that nibble is 0 so it matches the 16-bit decode. This + the `data[7]` checksum are **confirmed by NanoRadar's own PX4 driver** (PR #25006); `decode_target_can` reports `checksum_valid`.
 - In the serial target frame, `b5`/`b6` (roll count / speed) are tentative; `id`, `RCS` and `range` are confirmed.
 - `0x60A` exists in both families with different meaning — pass `--family` to disambiguate rather than relying on `auto`.
