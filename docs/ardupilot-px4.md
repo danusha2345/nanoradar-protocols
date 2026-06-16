@@ -49,6 +49,10 @@ dist = ( ((data[0]>>4) & 0x0F) << 16 | data[2]<<8 | data[3] ) * 0.01
 ```
 and a higher (or removed) range clamp. This was flagged upstream on PR #30973.
 
+A **no-recompile** option for the full range is a Lua scripting driver (reads the CAN
+frames, does the 20-bit decode, feeds a scripting rangefinder backend `RNGFNDx_TYPE=36`).
+A ready-to-use one is in [`../ardupilot/nanoradar_altimeter_can_rangefinder.lua`](../ardupilot/nanoradar_altimeter_can_rangefinder.lua).
+
 ## PX4
 
 PX4 has a `nanoradar_can` driver under `src/drivers/distance_sensor/` (UAVCAN-based), discussed on the [PX4 forum](https://discuss.px4.io/t/px4-support-millimeter-wave-radar-as-rangfinder-and-obstacle-distance-sensor/46876). Configure via the standard `EKF2_RNG_*` rangefinder parameters once the driver is built in.

@@ -31,6 +31,7 @@ NanoRadar splits its products into two protocol families. They share some messag
 → **[docs/ardupilot-px4.md](docs/ardupilot-px4.md)** — what is supported today, open PRs, the long-range caveat
 → **[docs/sources.md](docs/sources.md)** — every source, with links
 → **[python/](python/)** — ready-to-use Python parsers for both families (`python3 -m nanoradar.selftest`, 9/9 vectors)
+→ **[ardupilot/](ardupilot/)** — Lua CAN driver to run the UAM285 altimeter (full 3000 m / 20-bit) on ArduPilot **without recompiling**
 
 ## Quick reference
 
