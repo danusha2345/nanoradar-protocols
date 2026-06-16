@@ -13,7 +13,28 @@ Verified across all release branches (checked June 2026). Both drivers were adde
 
 No stock support for MR76, **MR82**, NRA15, NRA24Pro, UAM231, **UAM285** (0 references in the codebase). MR82 is likely picked up by the MR72 proximity type since it shares family-A protocol (unconfirmed on hardware).
 
-Recommended setup: CAN bus at 500 kbit/s, `CAN_Dx_PROTOCOL = 14` (RadarCAN). MR72 and NRA24 can share one CAN bus. Note `MR72_MAX_RANGE_M = 50` in the proximity driver clamps range to 50 m even though MR82 reaches 80 m.
+MR72 and NRA24 can share one CAN bus. Note `MR72_MAX_RANGE_M = 50` in the proximity driver clamps range to 50 m even though MR82 reaches 80 m.
+
+### NRA24 parameters (from the ArduPilot wiki)
+
+**CAN** (native NanoRadar protocol):
+```
+CAN_P2_DRIVER   = 2
+CAN_P2_BITRATE  = 500000        # or whatever you set in the NSM tool
+CAN_D2_PROTOCOL = 14            # RadarCAN
+RNGFND1_TYPE    = 39            # NRA-24 (reboot after setting)
+RNGFND1_RECV_ID = <sensor id>   # 0 = accept all CAN ids
+RNGFND1_MAX     = 190 ; RNGFND1_MIN = 0.5
+```
+
+**UART** — NanoRadar's recommended path is the **"open-source" / USD1 mode** (the radar emits a US-D1-compatible stream; no ArduPilot code change):
+```
+SERIAL1_PROTOCOL = 9            # Rangefinder
+SERIAL1_BAUD     = 115          # 115200
+RNGFND1_TYPE     = 11           # USD1_Serial (reboot after setting)
+RNGFND1_MAX      = 190 ; RNGFND1_MIN = 0.5
+```
+⚠️ ArduPilot warns it hasn't verified all edge cases of the USD1 driver with NanoRadar hardware. PR #30973 adds a *native* NRA24 serial driver as an alternative (because USD1 doesn't fully match the NRA24 docs / some firmwares).
 
 ## ArduPilot — in progress
 

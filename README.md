@@ -63,13 +63,22 @@ rcs      = data[7] * 0.5 - 64.0                                # dBsm
        snr = data[7]-128 (NRA24 CAN driver)  /  payload[1]*0.5 (vendor tool, UAM path)
 ```
 
-### Altimeter — UART/serial (14-byte frame)
+### Altimeter — UART/serial (native 14-byte frame)
 ```
 0xAA 0xAA | ID_lo ID_hi | b0 b1 b2 b3 b4 b5 b6 | checksum | 0x55 0x55
 ID = ID_lo + ID_hi*0x100        # 0x0A 0x06 → 0x60A status ; 0x0C 0x07 → 0x70C target
 checksum = 0xFF & (b0+b1+...+b6)
 Target 0x70C: b0=Index, b1=RCS(*0.5-50), b2:b3=Range(*0.01 m)  (+ high nibble of b0 for long-range)
 ```
+
+### Altimeter — "open-source" mode = USD1 / uLanding compatible
+The altimeters can switch to an **Aerotenna/Ainstein US-D1 compatible** serial stream so they work with ArduPilot/PX4 **without code changes** — just select the existing USD1 driver (`RNGFNDx_TYPE = 11`, `SERIALx_PROTOCOL = 9`, 115200 baud):
+```
+0xFE | version | distL distH | b4 | checksum     # distance = (distH*256+distL)*0.01 m
+```
+
+### Altimeter models / ranges
+`NRA24` 50–200 m · `NRA24Pro` ~300–500 m → **16-bit distance**;  `UAM231` 1000 m · `UAM285` 3000 m → **20-bit distance** (needs the high nibble of `data[0]`).
 
 ## Status & contributions
 

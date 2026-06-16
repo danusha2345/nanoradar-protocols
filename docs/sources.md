@@ -11,6 +11,8 @@ Everything here was reconstructed from public, freely available material. No ven
 ## Open-source drivers (altimeter / family B)
 - [ArduPilot `AP_RangeFinder_NRA24_CAN`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_RangeFinder/AP_RangeFinder_NRA24_CAN.cpp) — `0x70C` target / `0x60A` heartbeat, 16-bit distance.
 - [ArduPilot PR #30973](https://github.com/ArduPilot/ardupilot/pull/30973) — NRA24 serial driver (documents the 14-byte serial frame).
+- [ArduPilot `AP_RangeFinder_USD1_Serial`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_RangeFinder/AP_RangeFinder_USD1_Serial.cpp) — the US-D1/uLanding frame that NanoRadar altimeters emulate in "open-source" mode.
+- [ArduPilot NRA24 wiki](https://github.com/ArduPilot/ardupilot_wiki/blob/master/common/source/docs/common-rangefinder-nra24.rst) — exact CAN/UART parameters; documents the USD1 recommendation.
 - PX4 `nanoradar_can` driver (`src/drivers/distance_sensor/`).
 
 ## NanoRadar official (for reference — go here for the authoritative docs/tools)
@@ -20,7 +22,11 @@ Everything here was reconstructed from public, freely available material. No ven
   - `NSM Tools v2.0.7` — host software for the altimeter series (NRA24/NRA15/UAM231). Used (decompiled) to recover the 20-bit long-range distance field.
 - MR72 communication protocol (official): <http://en.nanoradar.cn/File/view/id/491.html>
 - NRA24 user manual ("with check sum") — serial frame + checksum (search ManualsLib / fcc.report FCC-ID `2A6WU-NRA24`).
+- NRA24 setup / baud / USD1 docs referenced by ArduPilot: `en.nanoradar.cn/File/download/id/467.html`, `File/view/id/436.html`, `Article/detail/id/495.html`.
+- Altimeter product pages: NRA24Pro (~300–500 m) `nanoradar.com/Products_1/37.html`, UAM231 (1000 m) `en.nanoradar.cn/Article/detail/id/604.html`, UAM285 (3000 m) `en.nanoradar.cn/news_detail_1/3.html`.
 - The **UAM285 protocol manual** does not appear to be publicly posted; request it from `sales@nanoradar.cn`.
+
+> Note: most `nanoradar.cn` / ManualsLib / scribd / robu.in protocol PDFs are paywalled or block direct fetching, which is why this repo reconstructs the protocol from open-source drivers and the vendor's own (freely downloadable) host tools instead.
 
 ## ArduPilot docs
 - [Nanoradar MR72 (Copter)](https://ardupilot.org/copter/docs/common-rangefinder-mr72.html)
