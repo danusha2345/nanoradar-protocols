@@ -30,6 +30,7 @@ NanoRadar splits its products into two protocol families. They share some messag
 → **[docs/altimeter-protocol.md](docs/altimeter-protocol.md)** — family B, CAN + serial, incl. the 20-bit long-range distance field
 → **[docs/ardupilot-px4.md](docs/ardupilot-px4.md)** — what is supported today, open PRs, the long-range caveat
 → **[docs/sources.md](docs/sources.md)** — every source, with links
+→ **[python/](python/)** — ready-to-use Python parsers for both families (`python3 -m nanoradar.selftest`, 9/9 vectors)
 
 ## Quick reference
 
