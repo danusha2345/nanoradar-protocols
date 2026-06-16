@@ -2,3 +2,5 @@
 *.zip
 *.exe
 *.dll
+__pycache__/
+*.pyc
